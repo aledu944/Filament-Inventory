@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class InventoryResource extends Resource
 {
     protected static ?string $model = Inventory::class;
-
+    protected static ?string $navigationGroup = 'Inventarios';
     protected static ?string $navigationLabel = 'Inventarios';
     protected static ?string $navigationIcon = 'heroicon-o-clipboard';
 
@@ -31,14 +31,20 @@ class InventoryResource extends Resource
                 Select::make('warehouse_id')
                     ->label('Almacén')
                     ->relationship('warehouse', 'name')
+                    ->preload()
+                    ->default(1)
+                    ->searchable()
                     ->required(),
 
                 Select::make('product_id')
                     ->label('Producto')
+                    ->searchable()
                     ->relationship('product', 'name')
+                    ->preload()
+                    ->default(1)
                     ->required(),
 
-                TextInput::make('quantity')
+                TextInput::make('stock')
                     ->label('Cantidad')
                     ->numeric()
                     ->required(),
@@ -49,9 +55,20 @@ class InventoryResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('warehouse.name')->label('Almacén'),
-                TextColumn::make('product.name')->label('Producto'),
-                TextColumn::make('quantity')->label('Cantidad'),
+
+                TextColumn::make('warehouse.name')
+                    ->label('Almacén'),
+
+                TextColumn::make('product.code')
+                    ->searchable()
+                    ->label('Codigo'),
+                
+                TextColumn::make('product.name')
+                    ->searchable()
+                    ->label('Producto'),
+
+                TextColumn::make('stock')
+                    ->label('Stock'),
             ])
             ->filters([
                 SelectFilter::make('warehouse_id')

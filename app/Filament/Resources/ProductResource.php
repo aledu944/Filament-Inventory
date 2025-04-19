@@ -9,6 +9,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -17,6 +18,7 @@ class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
+    protected static ?string $navigationGroup = 'Catálogo';
     protected static ?string $navigationLabel = 'Productos';
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
@@ -32,7 +34,26 @@ class ProductResource extends Resource
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('name')
+                    ->label('Nombre')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('summary')
+                    ->label('Resumen')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(50),
+                TextColumn::make('price')
+                    ->label('Precio')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make("category_id")
+                    ->label('Categoría')
+                    ->getStateUsing(function ($record) {
+                        return $record->category->name;
+                    })
+                    ->searchable()
+                    ->sortable(),
             ])
             ->filters([
                 //

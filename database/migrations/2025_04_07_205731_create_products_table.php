@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text("description");
             $table->decimal("price");
             $table->string("code")->unique();
-
+            $table->string('image', 255)->nullable();
             $table->boolean("is_active")->default(true);
             $table->foreignId("category_id")
                 ->nullable()

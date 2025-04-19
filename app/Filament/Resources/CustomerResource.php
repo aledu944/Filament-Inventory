@@ -18,7 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
-
+    
+    protected static ?string $navigationGroup = 'CRM';
     protected static ?string $navigationLabel = 'Clientes';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
