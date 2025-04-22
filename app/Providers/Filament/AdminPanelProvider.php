@@ -9,6 +9,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Assets\Css;
 use Filament\Support\Colors\Color;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -24,6 +25,10 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->brandName("Filament Innova")
+            ->assets([
+                // Css::make('custom-stylesheet', resource_path('css/app.css')),
+            ])
+            // ->viteTheme('resources/css/app.css')
             ->default()
             ->id('admin')
             ->path('admin')

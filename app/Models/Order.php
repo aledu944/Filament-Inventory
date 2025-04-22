@@ -7,6 +7,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Order extends Model
 {
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'user_id',
+        'customer_id',
+        'total',
+        'warehouse_id', // <-- asegúrate de incluir esto
+    ];
+
 
     public function user(): BelongsTo
     {
@@ -22,4 +34,21 @@ class Order extends Model
     {
         return $this->hasMany(OrderProduct::class);
     }
+
+    protected static function booted(): void
+    {
+        static::created(function (Order $order) {
+            foreach ($order->orderProducts as $item) {
+                $inventory = Inventory::where('warehouse_id', $order->warehouse_id)
+                    ->where('product_id', $item->product_id)
+                    ->get()[0];
+    
+                if ($inventory) {
+                    $inventory->quantity -= $item->quantity;
+                    $inventory->save();
+                }
+            }
+        });
+    }
+
 }

@@ -3,26 +3,31 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
-use App\Filament\Resources\OrderResource\RelationManagers;
+use App\Models\Inventory;
 use App\Models\Order;
-use Filament\Forms;
+use App\Models\Product;
+use App\Models\Warehouse;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'CRM';
+    protected static ?string $navigationLabel = 'Ventas';
+    protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
 
     public static function form(Form $form): Form
     {
@@ -50,26 +55,133 @@ class OrderResource extends Resource
                                     ->maxLength(255),
                             ]),
                     ]),
-                Section::make('Items')
-                    ->schema([
-                        Repeater::make('orderProducts')
-                            ->relationship()
-                            ->schema([
-                                Select::make('product_id')
-                                    ->relationship('product', 'name')
-                                    ->required(),
-                                TextInput::make('quantity')
-                                    ->numeric()
-                                    ->required(),
-                                TextInput::make('subTotal')
-                                    ->numeric()
-                                    ->required(),
-                            ])
-                            ->columns(3)
-                            ->label('Order Details')
-                            ->defaultItems(1)
-                            ->createItemButtonLabel('Agregar producto'),
-                    ])
+                Section::make('Items')->schema([
+                    // 1) Almacén: debe ser “live” y no persistirse si no quieres guardarlo
+                    Select::make('warehouse_id')
+                        ->label('Almacén')
+                        ->options(Warehouse::pluck('name', 'id')->toArray())
+                        ->required()
+                        ->live()                        // ← recarga el formulario al cambiar :contentReference[oaicite:10]{index=10}
+                        ->dehydrated(false)
+                        ->afterStateUpdated(fn(Get $get, Set $set) => $set('orderProducts', [])),
+
+                    // 2) Repeater de productos: también “live”
+                    Repeater::make('orderProducts')
+                        ->relationship()               // carga la relación HasMany automáticamente :contentReference[oaicite:11]{index=11}
+                        ->live()                       // ← re-renderiza cada fila al cambiar el formulario :contentReference[oaicite:12]{index=12}
+                        ->columns(4)
+                        ->schema([
+                            Select::make('product_id')
+                                ->label('Producto')
+                                ->searchable()
+                                ->required()
+                                ->reactive()
+                                ->live()   // ← reactiva el select para volver a invocar options() al cambiar warehouse_id
+                                ->options(
+                                    fn(Get $get): array => Product::query()
+                                        // Filtrar productos por inventarios en el almacén real
+                                        ->whereHas(
+                                            'inventories',
+                                            fn($q) => $q
+                                                ->where('warehouse_id', $get('../../warehouse_id'))
+                                        )
+                                        ->pluck('name', 'id')   // array [id => nombre]
+                                        ->toArray()
+                                ),
+                            TextInput::make('quantity')
+                                ->label('Cantidad')
+                                ->numeric()
+                                ->required()    
+                                ->rule(function (Get $get) {
+                                    $productId = $get('product_id');
+                                    $warehouseId = $get('../../warehouse_id');
+                            
+                                    if (!$productId || !$warehouseId) {
+                                        return null; // aún no hay datos suficientes para validar
+                                    }
+                            
+                                    $stock = Inventory::where('product_id', $productId)
+                                        ->where('warehouse_id', $warehouseId)
+                                        ->value('stock') ?? 0;
+                            
+                                    return "max:$stock";
+                                })
+                                ->helperText(function (Get $get) {
+                                    $productId = $get('product_id');
+                                    $warehouseId = $get('../../warehouse_id');
+                            
+                                    if (!$productId || !$warehouseId) {
+                                        return null;
+                                    }
+                            
+                                    $stock = \App\Models\Inventory::where('product_id', $productId)
+                                        ->where('warehouse_id', $warehouseId)
+                                        ->value('stock') ?? 0;
+                            
+                                    return "Stock disponible: $stock";
+                                })
+                                ->reactive(),
+
+                            Placeholder::make('unit_price')
+                                ->label('Precio Unitario')
+                                ->content(
+                                    fn(Get $get): string =>
+                                    number_format(
+                                        optional(Product::find($get('product_id')))->price ?? 0,
+                                        2,
+                                        '.',
+                                        ''
+                                    )
+                                ),
+
+                            Placeholder::make('sub_total')
+                                ->label('Subtotal')
+                                ->content(
+                                    fn(Get $get): string =>
+                                    number_format(
+                                        $get('quantity') * (optional(Product::find($get('product_id')))->price ?? 0),
+                                        2,
+                                        '.',
+                                        ''
+                                    )
+                                ),
+                        ])
+                        // Hook que muta el array de datos justo ANTES de crear cada pivot:
+                        ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                            $data['subTotal'] = $data['quantity'] * optional(Product::find($data['product_id']))->price;
+                            return $data;
+                        })
+                        // Hook que muta ANTES de guardar cuando editas un registro existente:
+                        ->mutateRelationshipDataBeforeSaveUsing(function (array $data): array {
+                            $data['subTotal'] = $data['quantity'] * optional(Product::find($data['product_id']))->price;
+                            return $data;
+                        })
+                        ->afterStateUpdated(function (Get $get, Set $set): void {
+                            $total = collect($get('orderProducts'))
+                                ->sum(
+                                    fn($item) =>
+                                    $item['quantity']
+                                        * (optional(\App\Models\Product::find($item['product_id']))->price ?? 0)
+                                );
+
+                            $set('total', $total);
+                        }),
+
+
+                    Hidden::make('total')
+                        ->reactive(),
+
+                    Placeholder::make("")
+                        ->label('Total')
+                        ->columnSpan('full')
+                        ->reactive()
+                        ->content(
+                            fn(Get $get): string =>
+                            'Bs. ' . number_format($get('total') ?? 0, 2, '.', '')
+                        ),
+
+                ]),
+
             ]);
     }
 
@@ -115,5 +227,16 @@ class OrderResource extends Resource
             'create' => Pages\CreateOrder::route('/create'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Método auxiliar para recalcular el total tras cada cambio
+     */
+    protected static function recalculateTotal(Get $get, Set $set): void
+    {
+        $subtotal = collect($get('orderProducts'))
+            ->sum(fn($item) => $item['quantity'] * $item['unit_price']);
+
+        $set('total', number_format($subtotal, 2, '.', ''));
     }
 }
