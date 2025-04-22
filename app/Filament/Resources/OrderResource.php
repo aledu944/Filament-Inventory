@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
+use App\Filament\Resources\OrderResource\Widgets\OrderWidget;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\Product;
@@ -91,33 +92,33 @@ class OrderResource extends Resource
                             TextInput::make('quantity')
                                 ->label('Cantidad')
                                 ->numeric()
-                                ->required()    
+                                ->required()
                                 ->rule(function (Get $get) {
                                     $productId = $get('product_id');
                                     $warehouseId = $get('../../warehouse_id');
-                            
+
                                     if (!$productId || !$warehouseId) {
                                         return null; // aún no hay datos suficientes para validar
                                     }
-                            
+
                                     $stock = Inventory::where('product_id', $productId)
                                         ->where('warehouse_id', $warehouseId)
                                         ->value('stock') ?? 0;
-                            
+
                                     return "max:$stock";
                                 })
                                 ->helperText(function (Get $get) {
                                     $productId = $get('product_id');
                                     $warehouseId = $get('../../warehouse_id');
-                            
+
                                     if (!$productId || !$warehouseId) {
                                         return null;
                                     }
-                            
+
                                     $stock = \App\Models\Inventory::where('product_id', $productId)
                                         ->where('warehouse_id', $warehouseId)
                                         ->value('stock') ?? 0;
-                            
+
                                     return "Stock disponible: $stock";
                                 })
                                 ->reactive(),
@@ -199,6 +200,9 @@ class OrderResource extends Resource
                     ->label('Total')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('created_at')
+                    ->label('Fecha')
+                    ->date()
             ])
             ->filters([
                 //
