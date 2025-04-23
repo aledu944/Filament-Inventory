@@ -8,5 +8,6 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateInventory extends CreateRecord
 {
+    protected static ?string $title = 'Nuevo arqueo';
     protected static string $resource = InventoryResource::class;
 }

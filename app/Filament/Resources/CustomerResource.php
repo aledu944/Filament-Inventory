@@ -11,6 +11,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
-    
+
     protected static ?string $navigationGroup = 'CRM';
     protected static ?string $navigationLabel = 'Clientes';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
@@ -48,8 +49,8 @@ class CustomerResource extends Resource
                             ->unique("customers", "nit")
                             ->required(),
                         Toggle::make('is_active')
-                                ->label("Estado"),
-                ])->columns(2),
+                            ->label("Estado"),
+                    ])->columns(2),
             ]);
     }
 
@@ -65,16 +66,19 @@ class CustomerResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('nit')
                     ->searchable(),
-                Tables\Columns\IconColumn::make('is_active')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check')
-                    ->falseIcon('heroicon-o-x-mark'),
+                TextColumn::make('is_active')
+                    ->badge()
+                    ->label('Estado')
+                    ->formatStateUsing(fn(bool $state): string => $state ? 'Activo' : 'Inactivo')
+                    ->color(fn(bool $state): string => $state ? 'success' : 'danger'),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->icon('heroicon-m-pencil-square')
+                    ->iconButton(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

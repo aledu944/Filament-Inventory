@@ -8,6 +8,8 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditCustomer extends EditRecord
 {
+    protected static ?string $title = 'Editar cliente';
+
     protected static string $resource = CustomerResource::class;
 
     protected function getHeaderActions(): array

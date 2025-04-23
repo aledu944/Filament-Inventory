@@ -8,5 +8,6 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateWarehouse extends CreateRecord
 {
+    protected static ?string $title = 'Registrar almacen';
     protected static string $resource = WarehouseResource::class;
 }

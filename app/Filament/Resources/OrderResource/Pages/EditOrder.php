@@ -10,6 +10,9 @@ class EditOrder extends EditRecord
 {
     protected static string $resource = OrderResource::class;
 
+    protected static ?string $title = 'Editar ventas';
+
+
     protected function getHeaderActions(): array
     {
         return [

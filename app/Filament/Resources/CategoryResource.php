@@ -15,7 +15,7 @@ use Filament\Tables\Actions\Action;
 class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
-    
+
     protected static ?string $navigationGroup = 'Catálogo';
     protected static ?string $navigationLabel = 'Categorías';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -44,18 +44,18 @@ class CategoryResource extends Resource
                     ->label('Nombre'),
 
                 TextColumn::make('summary')
-                    ->label('Resumen'),
+                    ->label('Resumen')
+                    ->limit(40),
 
                 TextColumn::make('created_at')
-                    ->label('Fecha de registro'),
+                    ->label('Fecha de registro')
+                    ->date(),
             ])
             ->filters([])
             ->actions([
-                Tables\Actions\EditAction::make(),
-
-                Action::make('delete')
-                    ->requiresConfirmation()
-                    ->action(fn(Category $record) => $record->delete())
+                Tables\Actions\EditAction::make()
+                    ->icon('heroicon-m-pencil-square')
+                    ->iconButton(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

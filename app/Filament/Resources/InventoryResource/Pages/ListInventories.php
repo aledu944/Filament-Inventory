@@ -8,6 +8,7 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListInventories extends ListRecords
 {
+    protected static ?string $title = 'Inventarios';
     protected static string $resource = InventoryResource::class;
 
     protected function getHeaderActions(): array
