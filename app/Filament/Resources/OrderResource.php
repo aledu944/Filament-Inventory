@@ -3,6 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
+use App\Filament\Resources\OrderResource\RelationManagers\OrderProductsRelationManager;
+use App\Filament\Resources\OrderResource\RelationManagers\OrderProductsRelationManagerRelationManager;
 use App\Filament\Resources\OrderResource\Widgets\OrderWidget;
 use App\Models\Inventory;
 use App\Models\Order;
@@ -71,6 +73,8 @@ class OrderResource extends Resource
                         ->relationship()               // carga la relación HasMany automáticamente :contentReference[oaicite:11]{index=11}
                         ->live()                       // ← re-renderiza cada fila al cambiar el formulario :contentReference[oaicite:12]{index=12}
                         ->columns(4)
+                        // ->extraAttributes(['wire:poll.1500ms' => '']) // opcional: actualiza cada 500ms
+                        ->extraAttributes(["wire:poll.visible" => ''])
                         ->schema([
                             Select::make('product_id')
                                 ->label('Producto')
@@ -121,6 +125,7 @@ class OrderResource extends Resource
 
                                     return "Stock disponible: $stock";
                                 })
+                                
                                 ->reactive(),
 
                             Placeholder::make('unit_price')
@@ -209,6 +214,8 @@ class OrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make()
+                ->label('Ver')
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -220,7 +227,7 @@ class OrderResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            OrderProductsRelationManager::class
         ];
     }
 
@@ -230,6 +237,7 @@ class OrderResource extends Resource
             'index' => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
+            'view' => Pages\ViewOrder::route('/{record}'),
         ];
     }
 

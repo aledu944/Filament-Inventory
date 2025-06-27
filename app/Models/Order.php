@@ -19,6 +19,7 @@ class Order extends Model
         'warehouse_id', // <-- asegúrate de incluir esto
     ];
 
+    protected $with = ['user', 'customer'];
 
     public function user(): BelongsTo
     {

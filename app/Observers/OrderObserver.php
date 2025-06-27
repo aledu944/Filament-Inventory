@@ -26,12 +26,9 @@ class OrderObserver
                 ->success()
                 ->icon('heroicon-s-shopping-cart')
                 ->actions([
-                    Action::make('view')
-                        ->button()
-                        ->url(route('orders.edit', $order), shouldOpenInNewTab: true),
                     // new FilamentNotificationAction('edit').button()
                     // 'Ver orden',
-                    // OrderResource::getUrl('edit',[ $order])
+                    // OrderResource::getUrl('view',[ $order])
                 ])
                 // ->url(route('filament.resources.orders.edit', ['record' => $order->id]))
                 ->sendToDatabase($admin);

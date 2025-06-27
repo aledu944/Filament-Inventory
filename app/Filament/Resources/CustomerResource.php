@@ -4,11 +4,15 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CustomerResource\Pages;
 use App\Filament\Resources\CustomerResource\RelationManagers;
+use App\Filament\Resources\CustomerResource\RelationManagers\OrdersRelationManager;
 use App\Models\Customer;
 use Filament\Forms;
-use Filament\Forms\Components\Section;
+// use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -24,11 +28,44 @@ class CustomerResource extends Resource
     protected static ?string $navigationLabel = 'Clientes';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('Informacion del cliente')
+                    ->schema([
+                        TextEntry::make('name')
+                            ->label('Nombre'),
+                        TextEntry::make('email')
+                            ->label('Correo Electrónico'),
+                        TextEntry::make('phone')
+                            ->label('Teléfono'),
+                        TextEntry::make('nit')
+                            ->label('NIT'),
+                        TextEntry::make('is_active')
+                            ->label("Estado")
+                            ->formatStateUsing(fn(bool $state): string => $state ? 'Activo' : 'Inactivo'),
+                    ])->columns(2),
+
+                Section::make('Ventas')
+                    ->schema([
+                        TextEntry::make('orders_count')
+                            ->label('Cantidad de Ventas')
+                            ->formatStateUsing(fn(int $state): string => (string) $state),
+                        TextEntry::make('total_sales')
+                            ->label('Total Ventas')
+                            ->money('BOB'),
+                    ]),
+            
+            ]);
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Informacion del cliente')
+                Forms\Components\Section::make('Informacion del cliente')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
@@ -90,7 +127,7 @@ class CustomerResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            OrdersRelationManager::class,
         ];
     }
 
@@ -100,6 +137,7 @@ class CustomerResource extends Resource
             'index' => Pages\ListCustomers::route('/'),
             'create' => Pages\CreateCustomer::route('/create'),
             'edit' => Pages\EditCustomer::route('/{record}/edit'),
+            'view' => Pages\ViewCustomer::route('/{record}'),
         ];
     }
 }
